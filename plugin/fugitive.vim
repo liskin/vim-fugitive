@@ -320,9 +320,18 @@ function! s:Tree(path) abort
   endif
   if !has_key(s:worktree_for_dir, dir)
     let s:worktree_for_dir[dir] = ''
-    let config_file = dir . '/config'
+    let commondir = fugitive#CommonDir(dir)
+    if empty(commondir)
+      let commondir = dir
+    endif
+    let config_file = commondir . '/config'
+    let worktree_config_file = dir . '/config.worktree'
     if filereadable(config_file)
       let config = readfile(config_file,'',10)
+      let ext_wtc_config = filter(config,'v:val =~# "^\\s*worktreeConfig *= *\\%(true\\|yes\\|on\\|1\\)$"')
+      if len(ext_wtc_config) == 1 && filereadable(worktree_config_file)
+        call extend(config, readfile(worktree_config_file,'',10))
+      endif
       let wt_config = filter(copy(config),'v:val =~# "^\\s*worktree *="')
       if len(wt_config) == 1
         let worktree = FugitiveVimPath(matchstr(wt_config[0], '= *\zs.*'))
